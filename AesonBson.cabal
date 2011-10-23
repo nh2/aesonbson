@@ -1,0 +1,37 @@
+Name: AesonBson
+Version: 0.1.0
+License: OtherLicense
+License-File: LICENSE
+Maintainer: Niklas Hambuechen <mail@nh2.me>
+Author: Niklas Hambuechen <mail@nh2.me> & Andras Slemmer <0slemi0@gmail.com>
+Build-Type: Simple
+Stability: experimental
+Synopsis: Mapping between Aeson's JSON and Bson objects.
+Description: This package lets you convert between Aeson's JSON and Bson objects.
+Category: Data
+Copyright: CC0
+Cabal-Version: >= 1.6
+Homepage:
+Tested-With: GHC==6.12.3
+
+source-repository head
+  type:      git
+  location:  git://github.com/nh2/AesonBson.git
+
+Library
+  Build-Depends:
+    array -any,
+    aeson >= 0.3,
+    attoparsec -any,
+    base < 5,
+    bson -any,
+    bytestring -any,
+    compact-string-fix -any,
+    containers -any,
+    text -any,
+    vector -any
+  Exposed-Modules:
+    Data.AesonBson
+  Hs-Source-Dirs: .
+  Ghc-Options: -Wall -fno-warn-orphans
+  
