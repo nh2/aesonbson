@@ -26,12 +26,12 @@ Library
     base < 5,
     bson -any,
     bytestring -any,
-    compact-string-fix -any,
-    containers -any,
+    unordered-containers -any,
     text -any,
     vector -any
   Exposed-Modules:
     Data.AesonBson
+    Data.AesonBson.Instances
   Hs-Source-Dirs: .
-  Ghc-Options: -Wall -fno-warn-orphans
-  
+  Ghc-Options: -Wall
+
