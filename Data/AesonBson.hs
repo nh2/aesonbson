@@ -1,9 +1,22 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+-- | Convert JSON to BSON and the other way around.
+--
+-- Note that BSON has more data types than JSON,
+-- so some BSON to JSON conversions are not bijective and somewhat arbitrary.
+--
+-- This means that for some BSON objects:
+--
+-- >bsonify . aesonify /= id
+-- >bsonifyValue . aesonifyValue /= id
+--
+-- We tried to choose sensible translations on those cases.
 module Data.AesonBson (
   aesonify, aesonifyValue,
   bsonify, bsonifyValue
 ) where
+
+-- TODO Document the arbitrary choices in the Haddock.
 
 import           Data.Bson as BSON
 import           Data.Aeson.Types as AESON
@@ -14,6 +27,7 @@ import qualified Data.Vector as Vector (fromList, toList)
 import           Numeric (showHex)
 
 
+-- | Converts a JSON value to BSON.
 bsonifyValue :: AESON.Value -> BSON.Value
 bsonifyValue (Object obj) = Doc $ bsonify obj
 bsonifyValue (AESON.Array array) = BSON.Array . map bsonifyValue . Vector.toList $ array
@@ -23,6 +37,8 @@ bsonifyValue (Number n) = case n of { Atto.I int   -> Int64 $ fromIntegral int
 bsonifyValue (AESON.Bool b) = BSON.Bool b
 bsonifyValue (AESON.Null) = BSON.Null
 
+
+-- | Converts a BSON value to JSON.
 aesonifyValue :: BSON.Value -> AESON.Value
 aesonifyValue (Float f) = toJSON f
 aesonifyValue (BSON.String s) = toJSON s
@@ -48,8 +64,10 @@ aesonifyValue (MinMax mm) = case mm of { MinKey -> toJSON (-1 :: Int)
                                        ; MaxKey -> toJSON (1 :: Int)}
 
 
+-- | Converts an AESON object to a BSON document.
 bsonify :: AESON.Object -> BSON.Document
 bsonify = map (\(t, v) -> t := bsonifyValue v) . HashMap.toList
 
+-- | Converts a BSON document to an AESON object.
 aesonify :: BSON.Document -> AESON.Object
 aesonify = HashMap.fromList . map (\(l := v) -> (l, aesonifyValue v))
