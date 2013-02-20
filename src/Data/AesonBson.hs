@@ -2,8 +2,8 @@
 {-# LANGUAGE FlexibleInstances #-}
 
 module Data.AesonBson (
-  aesonify, aesonifyValue,
-  bsonify, bsonifyValue
+  toAeson, aesonifyValue,
+  toBson, bsonifyValue
 ) where
 
 import Data.Bson as BSON
@@ -18,10 +18,10 @@ instance ToJSON BSON.Value where
   toJSON = aesonifyValue
 
 instance ToJSON Document where
-  toJSON = Object . aesonify
+  toJSON = Object . toAeson
 
 bsonifyValue :: AESON.Value -> BSON.Value
-bsonifyValue (Object obj) = Doc $ bsonify obj
+bsonifyValue (Object obj) = Doc $ toBson obj
 bsonifyValue (AESON.Array array) = BSON.Array . map bsonifyValue . Vector.toList $ array
 bsonifyValue (AESON.String str) = BSON.String str
 bsonifyValue (Number n) = case n of { I int   -> Int64 $ fromIntegral int
@@ -57,8 +57,8 @@ aesonifyValue (MinMax mm) = case mm of { MinKey -> toJSON (-1 :: Int)
                                        ; MaxKey -> toJSON (1 :: Int)}
 
 
-bsonify :: AESON.Object -> BSON.Document
-bsonify = map (\(t, v) -> (t := bsonifyValue v)) . Map.toList
+toBson :: AESON.Object -> BSON.Document
+toBson = map (\(t, v) -> (t := bsonifyValue v)) . Map.toList
 
-aesonify :: BSON.Document -> AESON.Object
-aesonify = Map.fromList . map (\(l := v) -> (l, aesonifyValue v))
+toAeson :: BSON.Document -> AESON.Object
+toAeson = Map.fromList . map (\(l := v) -> (l, aesonifyValue v))
