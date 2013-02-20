@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Data.AesonBson (
   aesonify, aesonifyValue,
@@ -8,9 +9,8 @@ module Data.AesonBson (
 import Data.Bson as BSON
 import Data.Aeson.Types as AESON
 import Data.Attoparsec.Number as Atto
-import Data.CompactString.UTF8 as UTF8 hiding (map)
-import Data.Text as Text hiding (map)
-import Data.Map as Map (fromList, toList)
+import Data.Text as T hiding (map)
+import Data.HashMap.Strict as Map (fromList, toList)
 import Data.Vector as Vector (toList)
 import Numeric
 
@@ -20,13 +20,10 @@ instance ToJSON BSON.Value where
 instance ToJSON Document where
   toJSON = Object . aesonify
 
-instance ToJSON UString where
-  toJSON = AESON.String . ustringToText
-
 bsonifyValue :: AESON.Value -> BSON.Value
 bsonifyValue (Object obj) = Doc $ bsonify obj
 bsonifyValue (AESON.Array array) = BSON.Array . map bsonifyValue . Vector.toList $ array
-bsonifyValue (AESON.String str) = BSON.String $ textToUstring str
+bsonifyValue (AESON.String str) = BSON.String str
 bsonifyValue (Number n) = case n of { I int   -> Int64 $ fromIntegral int
                                     ; D float -> Float float }
 bsonifyValue (AESON.Bool b) = BSON.Bool b
@@ -47,11 +44,11 @@ aesonifyValue (BSON.Bool bool) = toJSON bool
 aesonifyValue (UTC utc) = toJSON utc
 aesonifyValue (BSON.Null) = AESON.Null
 aesonifyValue (RegEx (Regex pattern mods)) = toJSON $
-                                           '/' : (UTF8.unpack pattern) ++
-                                           '/' : (UTF8.unpack mods)
+                                           '/' : T.unpack pattern ++
+                                           '/' : T.unpack mods
 aesonifyValue (JavaScr (Javascript env code)) = toJSON . Map.fromList $
-                                              [ (Text.pack "environment", toJSON env)
-                                              , (Text.pack "code", toJSON code)]
+                                              [ (T.pack "environment", toJSON env)
+                                              , (T.pack "code", toJSON code)]
 aesonifyValue (Sym (Symbol sym)) = toJSON sym
 aesonifyValue (Int32 int32) = toJSON int32
 aesonifyValue (Int64 int64) = toJSON int64
@@ -61,13 +58,7 @@ aesonifyValue (MinMax mm) = case mm of { MinKey -> toJSON (-1 :: Int)
 
 
 bsonify :: AESON.Object -> BSON.Document
-bsonify = map (\(t, v) -> (textToUstring t := bsonifyValue v)) . Map.toList
+bsonify = map (\(t, v) -> (t := bsonifyValue v)) . Map.toList
 
 aesonify :: BSON.Document -> AESON.Object
-aesonify = Map.fromList . map (\(l := v) -> (ustringToText l, aesonifyValue v))
-
-ustringToText :: UString -> Text
-ustringToText = Text.pack . UTF8.unpack
-
-textToUstring :: Text -> UString
-textToUstring = UTF8.pack . Text.unpack
+aesonify = Map.fromList . map (\(l := v) -> (l, aesonifyValue v))
