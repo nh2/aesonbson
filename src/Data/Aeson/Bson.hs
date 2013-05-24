@@ -1,7 +1,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module Data.AesonBson (
+module Data.Aeson.Bson (
   toAeson, aesonifyValue,
   toBson, bsonifyValue
 ) where
