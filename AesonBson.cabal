@@ -9,7 +9,7 @@ category:      Data
 build-type:    Simple
 stability:     experimental
 tested-With:   GHC==7.4.2
-cabal-version: >= 1.10
+cabal-version: >= 1.8
 homepage:      https://github.com/nh2/AesonBson
 bug-Reports:   https://github.com/nh2/AesonBson/issues
 synopsis:      Mapping between Aeson's JSON and Bson objects.
