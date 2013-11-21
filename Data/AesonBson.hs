@@ -24,7 +24,6 @@ import qualified Data.Attoparsec.Number as Atto
 import           Data.Monoid
 import qualified Data.HashMap.Strict as HashMap (fromList, toList)
 import qualified Data.Vector as Vector (fromList, toList)
-import           Numeric (showHex)
 
 
 -- | Converts a JSON value to BSON.
