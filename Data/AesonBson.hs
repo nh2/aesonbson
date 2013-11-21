@@ -48,7 +48,9 @@ aesonifyValue (Fun (Function function)) = toJSON function
 aesonifyValue (Uuid (UUID uuid)) = toJSON uuid
 aesonifyValue (Md5 (MD5 md5)) = toJSON md5
 aesonifyValue (UserDef (UserDefined userdef)) = toJSON userdef
-aesonifyValue (ObjId oid) = toJSON $ show oid
+aesonifyValue (ObjId oid) = toJSON $ show oid -- Relies on bson to show the OID as 24 digit hex.
+                                              -- It would be better if BSON exposed a non-show function for this,
+                                              -- preferably a fast one.
 aesonifyValue (BSON.Bool bool) = toJSON bool
 aesonifyValue (UTC utc) = toJSON utc
 aesonifyValue (BSON.Null) = AESON.Null
