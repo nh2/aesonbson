@@ -15,6 +15,9 @@ bug-Reports:   https://github.com/nh2/AesonBson/issues
 synopsis:      Mapping between Aeson's JSON and Bson objects.
 description:   This package lets you convert between Aeson's JSON and Bson objects.
 
+data-files:
+  CHANGELOG
+
 
 source-repository head
   type:      git
