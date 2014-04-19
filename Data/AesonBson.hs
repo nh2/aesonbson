@@ -21,8 +21,12 @@ module Data.AesonBson (
 import           Data.Bson as BSON
 import           Data.Aeson.Types as AESON
 import qualified Data.Attoparsec.Number as Atto
+import           Data.Int
 import           Data.Monoid
 import qualified Data.HashMap.Strict as HashMap (fromList, toList)
+import qualified Data.Scientific as Scientific
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import qualified Data.Vector as Vector (fromList, toList)
 
 
@@ -31,11 +35,22 @@ bsonifyValue :: AESON.Value -> BSON.Value
 bsonifyValue (Object obj) = Doc $ bsonify obj
 bsonifyValue (AESON.Array array) = BSON.Array . map bsonifyValue . Vector.toList $ array
 bsonifyValue (AESON.String str) = BSON.String str
-bsonifyValue (Number n) = case n of { Atto.I int   -> Int64 $ fromIntegral int
-                                    ; Atto.D float -> Float float }
+bsonifyValue (AESON.Number n)
+   | exponent < 0                              = Float (Scientific.toRealFloat n :: Double)
+   | int64MinBound <= n && n <  int32MinBound  = Int64 $ fromIntegral coefficient * 10 ^ exponent
+   | int32MinBound <= n && n <= int32MaxBound  = Int32 $ fromIntegral coefficient * 10 ^ exponent
+   | int32MaxBound <  n && n <= int64MaxBound  = Int64 $ fromIntegral coefficient * 10 ^ exponent
+   | otherwise                                 = error $ "Integer out of range: " ++ show n
+     where
+       exponent       = Scientific.base10Exponent n
+       coefficient    = Scientific.coefficient n
+       int64MaxBound  = toScientific (maxBound :: Int64)
+       int32MaxBound  = toScientific (maxBound :: Int32)
+       int64MinBound  = toScientific (minBound :: Int64)
+       int32MinBound  = toScientific (minBound :: Int32)
+       toScientific i = Scientific.scientific (fromIntegral i :: Integer ) 0
 bsonifyValue (AESON.Bool b) = BSON.Bool b
 bsonifyValue (AESON.Null) = BSON.Null
-
 
 -- | Converts a BSON value to JSON.
 aesonifyValue :: BSON.Value -> AESON.Value
@@ -43,11 +58,11 @@ aesonifyValue (Float f) = toJSON f
 aesonifyValue (BSON.String s) = toJSON s
 aesonifyValue (Doc doc) = Object $ aesonify doc
 aesonifyValue (BSON.Array list) = AESON.Array . Vector.fromList $ map aesonifyValue list
-aesonifyValue (Bin (Binary binary)) = toJSON binary
-aesonifyValue (Fun (Function function)) = toJSON function
-aesonifyValue (Uuid (UUID uuid)) = toJSON uuid
-aesonifyValue (Md5 (MD5 md5)) = toJSON md5
-aesonifyValue (UserDef (UserDefined userdef)) = toJSON userdef
+aesonifyValue (Bin (Binary binary)) = toJSON $ T.decodeUtf8 binary
+aesonifyValue (Fun (Function function)) = toJSON $ T.decodeUtf8 function
+aesonifyValue (Uuid (UUID uuid)) = toJSON $ T.decodeUtf8 uuid
+aesonifyValue (Md5 (MD5 md5)) = toJSON $ T.decodeUtf8 md5
+aesonifyValue (UserDef (UserDefined userdef)) = toJSON $ T.decodeUtf8 userdef
 aesonifyValue (ObjId oid) = toJSON $ show oid -- Relies on bson to show the OID as 24 digit hex.
                                               -- It would be better if BSON exposed a non-show function for this,
                                               -- preferably a fast one.
