@@ -24,15 +24,19 @@ import qualified Data.Attoparsec.Number as Atto
 import           Data.Monoid
 import qualified Data.HashMap.Strict as HashMap (fromList, toList)
 import qualified Data.Vector as Vector (fromList, toList)
+import           Data.Scientific
+import qualified Data.ByteString as B
+import qualified Data.Text.Encoding as TE
 
+instance ToJSON B.ByteString where
+  toJSON b = toJSON $ TE.decodeUtf8 b
 
 -- | Converts a JSON value to BSON.
 bsonifyValue :: AESON.Value -> BSON.Value
 bsonifyValue (Object obj) = Doc $ bsonify obj
 bsonifyValue (AESON.Array array) = BSON.Array . map bsonifyValue . Vector.toList $ array
 bsonifyValue (AESON.String str) = BSON.String str
-bsonifyValue (Number n) = case n of { Atto.I int   -> Int64 $ fromIntegral int
-                                    ; Atto.D float -> Float float }
+bsonifyValue (Number n) = Int64 $ fromIntegral $ coefficient n
 bsonifyValue (AESON.Bool b) = BSON.Bool b
 bsonifyValue (AESON.Null) = BSON.Null
 
