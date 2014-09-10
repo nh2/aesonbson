@@ -30,7 +30,7 @@ library
     Data.AesonBson.Instances
   build-depends:
     base < 5,
-    aeson >= 0.3,
+    aeson >= 0.3 && < 0.7,
     attoparsec >= 0.10,
     bson >= 0.2,
     unordered-containers >= 0.1.3.0,
