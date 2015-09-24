@@ -1,5 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.Aeson.Bson (
   toAeson, aesonifyValue,
@@ -8,11 +9,13 @@ module Data.Aeson.Bson (
 
 import Data.Bson as BSON
 import Data.Aeson.Types as AESON
-import Data.Attoparsec.Number as Atto
 import Data.Text as T hiding (map)
+import Data.Text.Encoding (decodeUtf8)
+import Data.ByteString (ByteString)
 import Data.HashMap.Strict as Map (fromList, toList)
 import Data.Vector as Vector (toList)
 import Numeric
+import Data.Scientific
 
 instance ToJSON BSON.Value where
   toJSON = aesonifyValue
@@ -24,10 +27,14 @@ bsonifyValue :: AESON.Value -> BSON.Value
 bsonifyValue (Object obj) = Doc $ toBson obj
 bsonifyValue (AESON.Array array) = BSON.Array . map bsonifyValue . Vector.toList $ array
 bsonifyValue (AESON.String str) = BSON.String str
-bsonifyValue (Number n) = case n of { I int   -> Int64 $ fromIntegral int
-                                    ; D float -> Float float }
+bsonifyValue (Number n) = case floatingOrInteger n of 
+                                    { Right (int :: Integer)   -> Int64 $ fromIntegral int
+                                    ; Left float -> Float float }
 bsonifyValue (AESON.Bool b) = BSON.Bool b
 bsonifyValue (AESON.Null) = BSON.Null
+
+instance ToJSON ByteString where
+    toJSON = toJSON . decodeUtf8
 
 aesonifyValue :: BSON.Value -> AESON.Value
 aesonifyValue (Float f) = toJSON f
