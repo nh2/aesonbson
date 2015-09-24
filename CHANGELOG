@@ -1,0 +1,4 @@
+0.2.1
+
+  * Fixed BSON ObjIDs being converted incorrectly
+    (https://github.com/nh2/aesonbson/pull/2)
