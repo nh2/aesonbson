@@ -53,3 +53,11 @@ main = hspec $ do
     it "converts Int32 to Int32" $ property $ \(x :: Int32) ->
       (bsonifyValue . AESON.Number $ Scientific.scientific (fromIntegral x) 0)
         `shouldBe` BSON.Int32 x
+
+  describe "JSON -> BSON with custom numeric handling" $ do
+    it "converts Int32 into a String" $ do
+      let x = fromIntegral (42 :: Int32) :: Integer
+          jsonNum = AESON.Number $ Scientific.scientific x 0
+          stringConverter :: AESON.Value -> BSON.Value; stringConverter (AESON.Number n) = BSON.String $ T.pack $ show n
+      (bsonifyValueNumeric stringConverter jsonNum)
+        `shouldBe` BSON.String "42.0"
