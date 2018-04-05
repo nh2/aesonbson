@@ -27,7 +27,6 @@ source-repository head
 library
   exposed-modules:
     Data.AesonBson
-    Data.AesonBson.Instances
   build-depends:
     base < 5,
     aeson >= 0.7,
