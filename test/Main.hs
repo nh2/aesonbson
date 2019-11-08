@@ -27,29 +27,40 @@ main = hspec $ do
   describe "JSON -> BSON" $ do
     it "converts Int32 max bound + 1 to Int64" $ do
       let x = succ $ fromIntegral (maxBound :: Int32) :: Integer
-      (bsonifyValue . AESON.Number $ Scientific.scientific x 0)
+      (bsonifyValue errorRange . AESON.Number $ Scientific.scientific x 0)
         `shouldBe` BSON.Int64 (fromIntegral x)
 
     it "converts Int32 max bound to Int32" $ do
       let x = fromIntegral (maxBound :: Int32) :: Integer
-      (bsonifyValue . AESON.Number $ Scientific.scientific x 0)
+      (bsonifyValue errorRange . AESON.Number $ Scientific.scientific x 0)
         `shouldBe` BSON.Int32 (fromIntegral x)
 
     it "converts Int32 min bound to Int32" $ do
       let x = fromIntegral (minBound :: Int32) :: Integer
-      (bsonifyValue . AESON.Number $ Scientific.scientific x 0)
+      (bsonifyValue errorRange . AESON.Number $ Scientific.scientific x 0)
         `shouldBe` BSON.Int32 (fromIntegral x)
 
     it "converts Int32 min bound - 1 to Int64" $ do
       let x = pred $ fromIntegral (minBound :: Int32) :: Integer
-      (bsonifyValue . AESON.Number $ Scientific.scientific x 0)
+      (bsonifyValue errorRange . AESON.Number $ Scientific.scientific x 0)
         `shouldBe` BSON.Int64 (fromIntegral x)
 
     it "converts number smaller than Int32 min bound to Int64" $ do
       let x = fromIntegral (minBound :: Int32) :: Integer
-      (bsonifyValue . AESON.Number $ Scientific.scientific (pred x) 0)
+      (bsonifyValue errorRange . AESON.Number $ Scientific.scientific (pred x) 0)
         `shouldBe` BSON.Int64 (fromIntegral $ pred x)
 
     it "converts Int32 to Int32" $ property $ \(x :: Int32) ->
-      (bsonifyValue . AESON.Number $ Scientific.scientific (fromIntegral x) 0)
+      (bsonifyValue errorRange . AESON.Number $ Scientific.scientific (fromIntegral x) 0)
         `shouldBe` BSON.Int32 x
+
+    it "converts Int64 max bound + 1 to Int64 max bound" $ do
+      let x = succ $ fromIntegral (maxBound :: Int64) :: Integer
+      (bsonifyValue bound . AESON.Number $ Scientific.scientific x 0)
+        `shouldBe` BSON.Int64 maxBound 
+
+    it "converts Int64 min bound - 1 to Int64 min bound" $ do
+      let x = pred $ fromIntegral (minBound :: Int64) :: Integer
+      (bsonifyValue bound . AESON.Number $ Scientific.scientific x 0)
+        `shouldBe` BSON.Int64 minBound 
+
