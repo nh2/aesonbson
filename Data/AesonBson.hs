@@ -31,6 +31,8 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Vector as Vector (fromList, toList)
 
+data OutOfBoundNumber = OutOfBoundMin S.Scientific
+                      | OutOfBoundMax S.Scientific
 
 -- | Converts an AESON object to a BSON document. Will yeld an error for JSON numbers that are too big.
 bsonifyError :: AESON.Object -> BSON.Document
@@ -41,7 +43,7 @@ bsonifyBound :: AESON.Object -> BSON.Document
 bsonifyBound = bsonify bound
 
 -- | Converts an AESON object to a BSON document. The user can provide a function to deal with JSON numbers that are too big.
-bsonify :: (S.Scientific -> BSON.Value) -> AESON.Object -> BSON.Document
+bsonify :: (OutOfBoundNumber -> BSON.Value) -> AESON.Object -> BSON.Document
 bsonify f o = map (\(t, v) -> t := bsonifyValue f v) $ HashMap.toList o
 
 -- | Converts a BSON document to an AESON object.
@@ -52,7 +54,7 @@ aesonify = HashMap.fromList . map (\(l := v) -> (l, aesonifyValue v))
 -- | Helpers
 
 -- | Converts a JSON value to BSON.
-bsonifyValue :: (S.Scientific -> BSON.Value) -> AESON.Value -> BSON.Value
+bsonifyValue :: (OutOfBoundNumber -> BSON.Value) -> AESON.Value -> BSON.Value
 bsonifyValue f (Object obj)        = Doc $ bsonify f obj
 bsonifyValue f (AESON.Array array) = BSON.Array . map (bsonifyValue f) . Vector.toList $ array
 bsonifyValue _ (AESON.String str)  = BSON.String str
@@ -60,10 +62,11 @@ bsonifyValue _ (AESON.Bool b)      = BSON.Bool b
 bsonifyValue _ (AESON.Null)        = BSON.Null
 bsonifyValue f (AESON.Number n)    
    | exponent < 0                              = Float (S.toRealFloat n :: Double)
+   | n < int64MinBound                         = f $ OutOfBoundMin n
    | int64MinBound <= n && n <  int32MinBound  = Int64 $ fromIntegral coefficient * 10 ^ exponent
    | int32MinBound <= n && n <= int32MaxBound  = Int32 $ fromIntegral coefficient * 10 ^ exponent
    | int32MaxBound <  n && n <= int64MaxBound  = Int64 $ fromIntegral coefficient * 10 ^ exponent
-   | otherwise                                 = f n
+   | n > int64MaxBound                         = f $ OutOfBoundMax n
      where
        exponent       = S.base10Exponent n
        coefficient    = S.coefficient n
@@ -101,10 +104,11 @@ int32MinBound  = toScientific (minBound :: Int32)
 toScientific :: Integral i => i -> S.Scientific
 toScientific i = S.scientific (fromIntegral i :: Integer ) 0
 
-errorRange :: S.Scientific -> BSON.Value
-errorRange n = error $ "Integer out of range: " ++ show n
+errorRange :: OutOfBoundNumber -> BSON.Value
+errorRange (OutOfBoundMin n) = error $ "Number out of min range: " ++ (show n)
+errorRange (OutOfBoundMax n) = error $ "Number out of max range: " ++ (show n)
 
-bound :: S.Scientific -> BSON.Value
-bound n | n < int64MinBound = Int64 minBound
-bound n | n > int64MaxBound = Int64 maxBound
+bound :: OutOfBoundNumber -> BSON.Value
+bound (OutOfBoundMin _) = Int64 minBound
+bound (OutOfBoundMax _) = Int64 maxBound
 
