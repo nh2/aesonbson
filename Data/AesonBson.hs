@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | Convert JSON to BSON and the other way around.
@@ -23,10 +24,25 @@ module Data.AesonBson (
 import           Data.Bson as BSON
 import           Data.Aeson.Types as AESON
 import           Data.Int
-import qualified Data.HashMap.Strict as HashMap (fromList, toList)
 import qualified Data.Scientific as S
+import qualified Data.Text as Text
 import qualified Data.Text.Encoding as T
 import qualified Data.Vector as Vector (fromList, toList)
+
+# if MIN_VERSION_aeson(2, 0, 0)
+import qualified Data.Aeson.Key as Key
+import qualified Data.Aeson.KeyMap as HashMap (fromList, toList)
+textToKey :: Text.Text -> AESON.Key
+textToKey = Key.fromText
+keyToText :: AESON.Key -> Text.Text
+keyToText = Key.toText
+# else
+import qualified Data.HashMap.Strict as HashMap (fromList, toList)
+textToKey :: Text.Text -> Text.Text
+textToKey = id
+keyToText :: Text.Text -> Text.Text
+keyToText = id
+# endif
 
 -- | Converts an AESON object to a BSON document. Will yeld an error for JSON numbers that are too big.
 bsonifyError :: AESON.Object -> BSON.Document
@@ -38,11 +54,11 @@ bsonifyBound = bsonify bound
 
 -- | Converts an AESON object to a BSON document. The user can provide a function to deal with JSON numbers that are too big.
 bsonify :: (S.Scientific -> BSON.Value) -> AESON.Object -> BSON.Document
-bsonify f o = map (\(t, v) -> t := bsonifyValue f v) $ HashMap.toList o
+bsonify f o = map (\(t, v) -> keyToText t := bsonifyValue f v) $ HashMap.toList o
 
 -- | Converts a BSON document to an AESON object.
 aesonify :: BSON.Document -> AESON.Object
-aesonify = HashMap.fromList . map (\(l := v) -> (l, aesonifyValue v))
+aesonify = HashMap.fromList . map (\(l := v) -> (textToKey l, aesonifyValue v))
 
 
 -- | Helpers
