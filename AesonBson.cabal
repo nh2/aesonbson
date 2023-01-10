@@ -1,6 +1,6 @@
 name:          AesonBson
 version:       0.4.1
-license:       OtherLicense
+license:       CC0-1.0
 license-file:  LICENSE
 copyright:     CC0
 author:        Niklas Hambüchen <mail@nh2.me> & Andras Slemmer <0slemi0@gmail.com>
